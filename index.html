@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bootfit — Cargo Space & Fit Calculator</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --card: #161b22;
+      --border: #30363d;
+      --accent: #2f81f7;
+      --accent-hover: #58a6ff;
+      --text: #c9d1d9;
+      --text-heading: #f0f6fc;
+      --muted: #8b949e;
+      --success: #238636;
+      --success-bg: rgba(46, 160, 67, 0.15);
+      --warning: #d29922;
+      --warning-bg: rgba(210, 153, 34, 0.15);
+      --danger: #da3633;
+      --danger-bg: rgba(248, 81, 73, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 900px;
+    }
+
+    header {
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      color: var(--text-heading);
+      letter-spacing: -0.5px;
+    }
+
+    .grid-layout {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    @media (min-width: 768px) {
+      .grid-layout {
+        grid-template-columns: 1fr 1fr;
+      }
+      .full-width {
+        grid-column: span 2;
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: var(--text-heading);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-heading);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+
+    select:focus, input:focus {
+      border-color: var(--accent);
+    }
+
+    .dim-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .unit-toggle {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px;
+      margin-bottom: 16px;
+    }
+
+    .unit-toggle button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--muted);
+      padding: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .unit-toggle button.active {
+      background: var(--card);
+      color: var(--text-heading);
+      border: 1px solid var(--border);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: rgba(47, 129, 247, 0.05);
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .checkbox-group:hover {
+      border-color: var(--accent);
+      background: rgba(47, 129, 247, 0.1);
+    }
+
+    .checkbox-group input {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .status-banner {
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+      border: 1px solid transparent;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .status-banner.fit {
+      background: var(--success-bg);
+      border-color: var(--success);
+      color: #3fb950;
+    }
+
+    .status-banner.tight {
+      background: var(--warning-bg);
+      border-color: var(--warning);
+      color: #d29922;
+    }
+
+    .status-banner.no-fit {
+      background: var(--danger-bg);
+      border-color: var(--danger);
+      color: #f85149;
+    }
+
+    .status-banner h3 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .status-banner p {
+      font-size: 0.9rem;
+    }
+
+    .orientation-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+
+    .schematic-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+
+    .view-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .canvas-container {
+      width: 100%;
+      height: 150px;
+      position: relative;
+      background: #090d13;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    .clearance-pills {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 8px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .pill {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    .share-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: background 0.2s;
+    }
+
+    .share-btn:hover {
+      background: var(--accent-hover);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <header>
+      <h1>Bootfit</h1>
+    </header>
+
+    <div class="grid-layout">
+      
+      <!-- Vehicle Section -->
+      <div class="card">
+        <h2>1. Vehicle Cargo Space</h2>
+
+        <div class="unit-toggle">
+          <button type="button" class="active" id="unitInches" onclick="setUnit('in')">Inches (in)</button>
+          <button type="button" id="unitCm" onclick="setUnit('cm')">Centimeters (cm)</button>
+        </div>
+
+        <div class="form-group">
+          <label for="bodyType">Vehicle Body Type Estimate</label>
+          <select id="bodyType" onchange="loadBodyEstimate()">
+            <option value="sedan" selected>Sedan / Saloon</option>
+            <option value="hatchback">Hatchback / Wagon</option>
+            <option value="compact_suv">Compact SUV / Crossover</option>
+            <option value="large_suv">Large SUV / Minivan</option>
+            <option value="truck">Pickup Truck Bed</option>
+            <option value="custom">Custom Dimensions</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Boot Dimensions (Length × Width × Height)</label>
+          <div class="dim-inputs">
+            <input type="number" id="bootL" value="38" placeholder="Length" oninput="calculateFit()">
+            <input type="number" id="bootW" value="42" placeholder="Width" oninput="calculateFit()">
+            <input type="number" id="bootH" value="22" placeholder="Height" oninput="calculateFit()">
+          </div>
+        </div>
+
+        <label class="checkbox-group">
+          <input type="checkbox" id="seatsFolded" onchange="calculateFit()">
+          <span>I am willing to fold the rear seats down</span>
+        </label>
+      </div>
+
+      <!-- Item Section -->
+      <div class="card">
+        <h2>2. Item Dimensions</h2>
+
+        <div class="form-group">
+          <label>Item Dimensions (Length × Width × Height)</label>
+          <div class="dim-inputs">
+            <input type="number" id="itemL" value="35" placeholder="Length" oninput="calculateFit()">
+            <input type="number" id="itemW" value="38" placeholder="Width" oninput="calculateFit()">
+            <input type="number" id="itemH" value="8" placeholder="Height" oninput="calculateFit()">
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div class="card full-width">
+        <h2>3. Fit & Orientation</h2>
+
+        <div id="statusBanner" class="status-banner fit">
+          <h3 id="statusTitle">Yes, It Fits!</h3>
+          <p id="statusDesc">Fits in the boot with seats up.</p>
+        </div>
+
+        <!-- Position & Orientation Dropdown Option -->
+        <div class="orientation-box">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="orientationSelect">Position & Orientation Strategy</label>
+            <select id="orientationSelect" onchange="updateSelectedOrientation()">
+              <!-- Populated dynamically via JS -->
+            </select>
+          </div>
+        </div>
+
+        <!-- Visual Schematics -->
+        <div class="grid-layout">
+          <div class="schematic-box">
+            <div class="view-title">Top View (Floor Plan & Length)</div>
+            <div class="canvas-container">
+              <canvas id="canvasTop" width="360" height="150"></canvas>
+            </div>
+            <div class="clearance-pills">
+              <span id="topClearanceL" class="pill">Length clearance: --</span>
+              <span id="topClearanceW" class="pill">Width clearance: --</span>
+            </div>
+          </div>
+
+          <div class="schematic-box">
+            <div class="view-title">Rear Trunk View (Looking In From Outside)</div>
+            <div class="canvas-container">
+              <canvas id="canvasRear" width="360" height="150"></canvas>
+            </div>
+            <div class="clearance-pills">
+              <span id="rearClearanceW" class="pill">Width clearance: --</span>
+              <span id="rearClearanceH" class="pill">Height clearance: --</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="share-btn" onclick="copyShareText()">Copy fit details</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let currentUnit = 'in';
+    let availableOrientations = [];
+
+    const bodyTypes = {
+      sedan: { l: 38, w: 42, h: 22, foldL: 66 },
+      hatchback: { l: 34, w: 40, h: 28, foldL: 64 },
+      compact_suv: { l: 40, w: 44, h: 34, foldL: 70 },
+      large_suv: { l: 48, w: 48, h: 38, foldL: 82 },
+      truck: { l: 67, w: 50, h: 21, foldL: 67 }
+    };
+
+    function setUnit(unit) {
+      if (unit === currentUnit) return;
+
+      const toCm = unit === 'cm';
+      const factor = toCm ? 2.54 : (1 / 2.54);
+
+      ['bootL', 'bootW', 'bootH', 'itemL', 'itemW', 'itemH'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input.value) {
+          input.value = Math.round(parseFloat(input.value) * factor);
+        }
+      });
+
+      currentUnit = unit;
+      document.getElementById('unitInches').classList.toggle('active', !toCm);
+      document.getElementById('unitCm').classList.toggle('active', toCm);
+      calculateFit();
+    }
+
+    function loadBodyEstimate() {
+      const type = document.getElementById('bodyType').value;
+      if (type === 'custom') return;
+
+      const est = bodyTypes[type];
+      const factor = currentUnit === 'cm' ? 2.54 : 1;
+
+      document.getElementById('bootL').value = Math.round(est.l * factor);
+      document.getElementById('bootW').value = Math.round(est.w * factor);
+      document.getElementById('bootH').value = Math.round(est.h * factor);
+      calculateFit();
+    }
+
+    function getFoldedLength(baseLength) {
+      const type = document.getElementById('bodyType').value;
+      const factor = currentUnit === 'cm' ? 2.54 : 1;
+
+      if (type !== 'custom' && bodyTypes[type]) {
+        return Math.round(bodyTypes[type].foldL * factor);
+      } else {
+        const defaultGain = currentUnit === 'cm' ? 71 : 28;
+        return baseLength + defaultGain;
+      }
+    }
+
+    function getOrientations(l, w, h) {
+      return [
+        { label: `Flat / Standard (${l}L × ${w}W × ${h}H)`, l: l, w: w, h: h },
+        { label: `Rotated Flat (${w}L × ${l}W × ${h}H)`, l: w, w: l, h: h },
+        { label: `On Side (${l}L × ${h}W × ${w}H)`, l: l, w: h, h: w },
+        { label: `On Side Rotated (${h}L × ${l}W × ${w}H)`, l: h, w: l, h: w },
+        { label: `Upright / On Edge (${w}L × ${h}W × ${l}H)`, l: w, w: h, h: l },
+        { label: `Upright Vertical (${h}L × ${w}W × ${l}H)`, l: h, w: w, h: l }
+      ];
+    }
+
+    function calculateFit() {
+      const isFolded = document.getElementById('seatsFolded').checked;
+      
+      const rawBootL = parseFloat(document.getElementById('bootL').value) || 0;
+      const bW = parseFloat(document.getElementById('bootW').value) || 0;
+      const bH = parseFloat(document.getElementById('bootH').value) || 0;
+
+      const foldedBootL = getFoldedLength(rawBootL);
+      const activeBootL = isFolded ? foldedBootL : rawBootL;
+
+      const iL = parseFloat(document.getElementById('itemL').value) || 0;
+      const iW = parseFloat(document.getElementById('itemW').value) || 0;
+      const iH = parseFloat(document.getElementById('itemH').value) || 0;
+
+      // Calculate orientations
+      availableOrientations = getOrientations(iL, iW, iH);
+
+      // Check which orientations fit in current setup and folded setup
+      const validCurrent = availableOrientations.filter(o => o.l <= activeBootL && o.w <= bW && o.h <= bH);
+      const validStandard = availableOrientations.filter(o => o.l <= rawBootL && o.w <= bW && o.h <= bH);
+      const validFolded = availableOrientations.filter(o => o.l <= foldedBootL && o.w <= bW && o.h <= bH);
+
+      const select = document.getElementById('orientationSelect');
+      const previousValue = select.value;
+      select.innerHTML = '';
+
+      availableOrientations.forEach((o, index) => {
+        const fitsThis = (o.l <= activeBootL && o.w <= bW && o.h <= bH);
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.textContent = `${o.label} — ${fitsThis ? 'Fits' : 'Exceeds bounds'}`;
+        select.appendChild(opt);
+      });
+
+      // Maintain selection if valid, otherwise pick best fitting orientation
+      let bestIndex = 0;
+      if (validCurrent.length > 0) {
+        bestIndex = availableOrientations.indexOf(validCurrent[0]);
+      }
+      select.value = bestIndex;
+
+      const banner = document.getElementById('statusBanner');
+      const title = document.getElementById('statusTitle');
+      const desc = document.getElementById('statusDesc');
+
+      if (validStandard.length > 0 || (isFolded && validFolded.length > 0)) {
+        banner.className = "status-banner fit";
+        title.textContent = "Yes, It Fits!";
+        desc.textContent = isFolded 
+          ? "Fits in the extended cargo space with rear seats folded down." 
+          : "Fits in the standard trunk with seats up.";
+      } else if (!isFolded && validFolded.length > 0) {
+        banner.className = "status-banner tight";
+        title.textContent = "Fold Seats Down Needed";
+        desc.textContent = "Item doesn't fit standard trunk space, but will fit if rear seats are folded down.";
+      } else {
+        banner.className = "status-banner no-fit";
+        title.textContent = "Does Not Fit";
+        desc.textContent = "Item exceeds boot dimensions in all positions, even with seats folded.";
+      }
+
+      updateSelectedOrientation();
+    }
+
+    function updateSelectedOrientation() {
+      const isFolded = document.getElementById('seatsFolded').checked;
+      const rawBootL = parseFloat(document.getElementById('bootL').value) || 0;
+      const bW = parseFloat(document.getElementById('bootW').value) || 0;
+      const bH = parseFloat(document.getElementById('bootH').value) || 0;
+      const activeBootL = isFolded ? getFoldedLength(rawBootL) : rawBootL;
+
+      const selectedIndex = parseInt(document.getElementById('orientationSelect').value) || 0;
+      const activeItem = availableOrientations[selectedIndex] || availableOrientations[0];
+
+      const fits = (activeItem.l <= activeBootL && activeItem.w <= bW && activeItem.h <= bH);
+      const color = fits ? '#3fb950' : '#f85149';
+
+      // Update clearance labels
+      const unitLbl = currentUnit;
+      const diffL = Math.round((activeBootL - activeItem.l) * 10) / 10;
+      const diffW = Math.round((bW - activeItem.w) * 10) / 10;
+      const diffH = Math.round((bH - activeItem.h) * 10) / 10;
+
+      document.getElementById('topClearanceL').textContent = `Length space: ${diffL >= 0 ? '+' : ''}${diffL} ${unitLbl}`;
+      document.getElementById('topClearanceW').textContent = `Width space: ${diffW >= 0 ? '+' : ''}${diffW} ${unitLbl}`;
+      document.getElementById('rearClearanceW').textContent = `Width space: ${diffW >= 0 ? '+' : ''}${diffW} ${unitLbl}`;
+      document.getElementById('rearClearanceH').textContent = `Height space: ${diffH >= 0 ? '+' : ''}${diffH} ${unitLbl}`;
+
+      drawSchematics(activeBootL, bW, bH, activeItem.l, activeItem.w, activeItem.h, color);
+    }
+
+    function drawSchematics(bL, bW, bH, iL, iW, iH, color) {
+      // 1. TOP VIEW (Floor Plan)
+      const cTop = document.getElementById('canvasTop');
+      const ctxT = cTop.getContext('2d');
+      ctxT.clearRect(0, 0, cTop.width, cTop.height);
+
+      const maxDimTopL = Math.max(bL, iL, 1);
+      const maxDimTopW = Math.max(bW, iW, 1);
+      const scaleTop = Math.min((cTop.width - 50) / maxDimTopL, (cTop.height - 40) / maxDimTopW);
+
+      const bootTW = bL * scaleTop;
+      const bootTH = bW * scaleTop;
+      const bootTX = (cTop.width - bootTW) / 2;
+      const bootTY = (cTop.height - bootTH) / 2;
+
+      // Draw boot outline
+      ctxT.strokeStyle = '#30363d';
+      ctxT.lineWidth = 2;
+      ctxT.strokeRect(bootTX, bootTY, bootTW, bootTH);
+
+      // Draw item
+      const itemTW = iL * scaleTop;
+      const itemTH = iW * scaleTop;
+      const itemTX = (cTop.width - itemTW) / 2;
+      const itemTY = (cTop.height - itemTH) / 2;
+
+      ctxT.fillStyle = color;
+      ctxT.globalAlpha = 0.35;
+      ctxT.fillRect(itemTX, itemTY, itemTW, itemTH);
+      ctxT.globalAlpha = 1.0;
+      ctxT.strokeStyle = color;
+      ctxT.lineWidth = 2;
+      ctxT.strokeRect(itemTX, itemTY, itemTW, itemTH);
+
+      // 2. REAR TRUNK VIEW (Looking in from outside behind tailgate)
+      const cRear = document.getElementById('canvasRear');
+      const ctxR = cRear.getContext('2d');
+      ctxR.clearRect(0, 0, cRear.width, cRear.height);
+
+      const maxDimRearW = Math.max(bW, iW, 1);
+      const maxDimRearH = Math.max(bH, iH, 1);
+      const scaleRear = Math.min((cRear.width - 60) / maxDimRearW, (cRear.height - 40) / maxDimRearH);
+
+      const bootRW = bW * scaleRear;
+      const bootRH = bH * scaleRear;
+      const bootRX = (cRear.width - bootRW) / 2;
+      const bootRY = (cRear.height - bootRH) / 2;
+
+      // Draw Rear Opening Frame (Rounded boot arch)
+      ctxR.strokeStyle = '#30363d';
+      ctxR.lineWidth = 2;
+      ctxR.beginPath();
+      ctxR.roundRect(bootRX, bootRY, bootRW, bootRH, [12, 12, 0, 0]);
+      ctxR.stroke();
+
+      // Item in trunk floor
+      const itemRW = iW * scaleRear;
+      const itemRH = iH * scaleRear;
+      const itemRX = (cRear.width - itemRW) / 2;
+      const itemRY = bootRY + (bootRH - itemRH); // resting on bottom floor
+
+      ctxR.fillStyle = color;
+      ctxR.globalAlpha = 0.35;
+      ctxR.fillRect(itemRX, itemRY, itemRW, itemRH);
+      ctxR.globalAlpha = 1.0;
+      ctxR.strokeStyle = color;
+      ctxR.lineWidth = 2;
+      ctxR.strokeRect(itemRX, itemRY, itemRW, itemRH);
+    }
+
+    function copyShareText() {
+      const status = document.getElementById('statusTitle').textContent;
+      const select = document.getElementById('orientationSelect');
+      const orientationLabel = select.options[select.selectedIndex]?.textContent || '';
+      const u = currentUnit;
+
+      const text = `Bootfit check: Status: ${status}. Strategy: ${orientationLabel}.`;
+      
+      const dummy = document.createElement('textarea');
+      document.body.appendChild(dummy);
+      dummy.value = text;
+      dummy.select();
+      document.execCommand('copy');
+      document.body.removeChild(dummy);
+
+      const shareBtn = document.querySelector('.share-btn');
+      const originalText = shareBtn.textContent;
+      shareBtn.textContent = 'Copied details to clipboard!';
+      setTimeout(() => { shareBtn.textContent = originalText; }, 2000);
+    }
+
+    // Initial calculation call
+    calculateFit();
+  </script>
+</body>
+</html>
